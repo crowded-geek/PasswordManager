@@ -9,8 +9,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.InputType;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -23,22 +21,17 @@ import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Logger;
 import com.google.firebase.database.ValueEventListener;
 
-import java.io.FileNotFoundException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.SecretKeySpec;
 
 import se.simbio.encryption.Encryption;
 
@@ -70,97 +63,7 @@ public class MainActivity extends AppCompatActivity {
                     if(dataSnapshot.hasChild("keyHash")){
                         Constants.keyHash = dataSnapshot.child("keyHash").getValue(String.class);
                         if(!Constants.gotTheKey) {
-                            AlertDialog.Builder a = new AlertDialog.Builder(MainActivity.this);
-                            a.setTitle("Enter Key");
-                            View v = View.inflate(MainActivity.this, R.layout.enter_key, null);
-                            a.setView(v);
-                            final EditText e = v.findViewById(R.id.enter_key_et);
-                            a.setPositiveButton("Done", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    if (md5(e.getText().toString()).equals(Constants.keyHash)) {
-                                        Constants.gotTheKey = true;
-                                        Constants.key = e.getText().toString();
-                                        passView = findViewById(R.id.passes);
-                                        ValueEventListener vel = new ValueEventListener() {
-                                            @Override
-                                            public void onDataChange(DataSnapshot dataSnapshot) {
-                                                if (dataSnapshot.hasChildren()) {
-                                                    ArrayList<PassEntry> l = new ArrayList<>();
-                                                    uniquenn = (long) dataSnapshot.child("uniquen").getValue();
-                                                    for (DataSnapshot i : dataSnapshot.getChildren()) {
-                                                        if (i.hasChildren()) {
-                                                            PassEntry e = new PassEntry(
-                                                                    i.child("username").getValue(String.class),
-                                                                    i.child("password").getValue(String.class),
-                                                                    i.child("description").getValue(String.class),
-                                                                    i.child("uniquen").getValue(Long.class)
-                                                            );
-                                                            l.add(e);
-                                                        }
-                                                    }
-                                                    list = l;
-                                                    adapter = new ListPassAdapter(MainActivity.this, list);
-                                                    passView.setAdapter(adapter);
-                                                }
-                                            }
-
-                                            @Override
-                                            public void onCancelled(DatabaseError databaseError) {
-
-                                            }
-                                        };
-                                        database.getReference().child(Constants.UID).child("passes").addValueEventListener(vel);
-                                        addPass = findViewById(R.id.add_pass);
-                                        addPass.setOnClickListener(new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View view) {
-                                                AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
-                                                View v = View.inflate(MainActivity.this, R.layout.edit_pass_entry, null);
-                                                final EditText t = v.findViewById(R.id.username_et);
-                                                final EditText p = v.findViewById(R.id.password_et);
-                                                final EditText d = v.findViewById(R.id.description_et);
-                                                b.setTitle("New Password");
-                                                b.setPositiveButton("Done", new DialogInterface.OnClickListener() {
-                                                    @Override
-                                                    public void onClick(DialogInterface dialogInterface, int i) {
-                                                        addPassToDB(
-                                                                t.getText().toString(),
-                                                                p.getText().toString(),
-                                                                d.getText().toString()
-                                                        );
-                                                    }
-                                                });
-                                                b.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                                                    @Override
-                                                    public void onClick(DialogInterface dialogInterface, int i) {
-                                                        dialogInterface.dismiss();
-                                                    }
-                                                });
-                                                b.setView(v);
-                                                b.show();
-                                            }
-                                        });
-
-                                        RecyclerView.LayoutManager linearLayoutManager = new LinearLayoutManager(MainActivity.this);
-                                        passView.setLayoutManager(linearLayoutManager);
-                                        list = new ArrayList<>();
-                                        adapter = new ListPassAdapter(MainActivity.this, list);
-                                        passView.setAdapter(adapter);
-                                    } else {
-                                        Toast.makeText(MainActivity.this, "Incorrect key, try again!", Toast.LENGTH_LONG).show();
-                                        finish();
-                                    }
-                                }
-                            });
-                            a.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    finish();
-                                }
-                            });
-                            a.setCancelable(false);
-                            a.show();
+                            getTheKey();
                         }
                     } else {
                             AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
@@ -196,6 +99,100 @@ public class MainActivity extends AppCompatActivity {
             };
             database.getReference().child(Constants.UID).addValueEventListener(key);
         }
+    }
+
+    private void getTheKey() {
+        AlertDialog.Builder a = new AlertDialog.Builder(MainActivity.this);
+        a.setTitle("Enter Key");
+        View v = View.inflate(MainActivity.this, R.layout.enter_key, null);
+        a.setView(v);
+        final EditText e = v.findViewById(R.id.enter_key_et);
+        a.setPositiveButton("Done", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                if (md5(e.getText().toString()).equals(Constants.keyHash)) {
+                    Constants.gotTheKey = true;
+                    Constants.key = e.getText().toString();
+                    passView = findViewById(R.id.passes);
+                    ValueEventListener vel = new ValueEventListener() {
+                        @Override
+                        public void onDataChange(DataSnapshot dataSnapshot) {
+                            if (dataSnapshot.hasChildren()) {
+                                ArrayList<PassEntry> l = new ArrayList<>();
+                                uniquenn = (long) dataSnapshot.child("uniquen").getValue();
+                                for (DataSnapshot i : dataSnapshot.getChildren()) {
+                                    if (i.hasChildren()) {
+                                        PassEntry e = new PassEntry(
+                                                i.child("username").getValue(String.class),
+                                                i.child("password").getValue(String.class),
+                                                i.child("description").getValue(String.class),
+                                                i.child("uniquen").getValue(Long.class)
+                                        );
+                                        l.add(e);
+                                    }
+                                }
+                                list = l;
+                                adapter = new ListPassAdapter(MainActivity.this, list);
+                                passView.setAdapter(adapter);
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(DatabaseError databaseError) {
+
+                        }
+                    };
+                    database.getReference().child(Constants.UID).child("passes").addValueEventListener(vel);
+                    addPass = findViewById(R.id.add_pass);
+                    addPass.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
+                            View v = View.inflate(MainActivity.this, R.layout.edit_pass_entry, null);
+                            final EditText t = v.findViewById(R.id.username_et);
+                            final EditText p = v.findViewById(R.id.password_et);
+                            final EditText d = v.findViewById(R.id.description_et);
+                            b.setTitle("New Password");
+                            b.setPositiveButton("Done", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    addPassToDB(
+                                            t.getText().toString(),
+                                            p.getText().toString(),
+                                            d.getText().toString()
+                                    );
+                                }
+                            });
+                            b.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    dialogInterface.dismiss();
+                                }
+                            });
+                            b.setView(v);
+                            b.show();
+                        }
+                    });
+
+                    RecyclerView.LayoutManager linearLayoutManager = new LinearLayoutManager(MainActivity.this);
+                    passView.setLayoutManager(linearLayoutManager);
+                    list = new ArrayList<>();
+                    adapter = new ListPassAdapter(MainActivity.this, list);
+                    passView.setAdapter(adapter);
+                } else {
+                    Toast.makeText(MainActivity.this, "Incorrect key, try again!", Toast.LENGTH_LONG).show();
+                    finish();
+                }
+            }
+        });
+        a.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                finish();
+            }
+        });
+        a.setCancelable(false);
+        a.show();
     }
 
     public interface ClickListener{
@@ -301,7 +298,7 @@ public class MainActivity extends AppCompatActivity {
     public String md5(String s) {
         try {
             // Create MD5 Hash
-            MessageDigest digest = java.security.MessageDigest.getInstance("MD5");
+            MessageDigest digest = MessageDigest.getInstance("MD5");
             digest.update(s.getBytes());
             byte messageDigest[] = digest.digest();
 
@@ -458,6 +455,9 @@ public class MainActivity extends AppCompatActivity {
                     database.getReference().child(Constants.UID).child("passes").child("uniquen").setValue((long) 0);
                 }
                 break;
+                default:
+
+                    break;
         }
     }
 
