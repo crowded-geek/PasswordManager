@@ -1,6 +1,6 @@
 # PasswordManager
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/b4daefb42ce742709eeb0092e5c5406a)](https://app.codacy.com/app/crowded-geek/PasswordManager?utm_source=github.com&utm_medium=referral&utm_content=crowded-geek/PasswordManager&utm_campaign=Badge_Grade_Dashboard)
-
+[![Build Status](https://travis-ci.org/crowded-geek/PasswordManager.svg?branch=master)](https://travis-ci.org/crowded-geek/PasswordManager)
 
 ## Android App to Save your passwords and we don't keep any passwords with us!
 - No password or username is saved in the raw form, all of them are encrypted and then saved in Firebase.
